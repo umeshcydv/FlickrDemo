@@ -7,6 +7,7 @@ import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -54,13 +55,15 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        startService(new Intent(MainActivity.this, FlickrIntentService.class));
     }
 
 
     @Override
     protected void onResume() {
         super.onResume();
+        if (mFlickrFeedDTO == null) {
+            startService(new Intent(MainActivity.this, FlickrIntentService.class));
+        }
         registerReceiver(receiver, new IntentFilter(FlickrIntentService.NOTIFICATION));
     }
 
@@ -76,9 +79,6 @@ public class MainActivity extends ActionBarActivity {
             String actionType = intent.getAction();
             if (actionType.equals(FlickrIntentService.NOTIFICATION)) {
                 mFlickrFeedDTO = (FlickrFeedDTO) intent.getExtras().getSerializable("Data");
-                if (mFLickrPhotosAdapter == null) {
-                    mFLickrPhotosAdapter = new FlickrPhotosAdapter();
-                }
                 setDataToView();
             }
         }
@@ -98,17 +98,24 @@ public class MainActivity extends ActionBarActivity {
 
     private void setDataToView() {
         if (mFLickrPhotosAdapter != null) {
-            if (mFlickrListView != null) {
-                mFlickrListView.setAdapter(mFLickrPhotosAdapter);
-                // Setting item position to be shown similar to what it was showing previous view.
-                mFlickrListView.setSelection(mItemToBeShown);
-                mFlickrListView.setOnScrollListener(onScrollListener);
-            } else {
-                mFlickrGridView.setAdapter(mFLickrPhotosAdapter);
-                // Setting item position to be shown similar to what it was showing previous view.
-                mFlickrGridView.setSelection(mItemToBeShown);
-                mFlickrGridView.setOnScrollListener(onScrollListener);
-            }
+            setDataToListView();
+        } else {
+            mFLickrPhotosAdapter = new FlickrPhotosAdapter();
+            setDataToListView();
+        }
+    }
+
+    private void setDataToListView() {
+        if (mFlickrListView != null) {
+            mFlickrListView.setAdapter(mFLickrPhotosAdapter);
+            // Setting item position to be shown similar to what it was showing previous view.
+            mFlickrListView.setSelection(mItemToBeShown);
+            mFlickrListView.setOnScrollListener(onScrollListener);
+        } else {
+            mFlickrGridView.setAdapter(mFLickrPhotosAdapter);
+            // Setting item position to be shown similar to what it was showing previous view.
+            mFlickrGridView.setSelection(mItemToBeShown + 1);
+            mFlickrGridView.setOnScrollListener(onScrollListener);
         }
     }
 
@@ -125,6 +132,18 @@ public class MainActivity extends ActionBarActivity {
         }
     };
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putSerializable("data", mFlickrFeedDTO);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        mFlickrFeedDTO = (FlickrFeedDTO) savedInstanceState.getSerializable("data");
+        setDataToView();
+    }
 
     public class FlickrPhotosAdapter extends BaseAdapter {
 
