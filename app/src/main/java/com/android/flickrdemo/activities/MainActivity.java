@@ -7,6 +7,7 @@ import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -33,6 +34,8 @@ import network.model.MediaDTO;
 
 public class MainActivity extends ActionBarActivity {
 
+    private static final String TAG = "com.android.flickrdemo.activities.MainActivity";
+
     @InjectView(R.id.lv_flicker_photos)
     @Optional ListView mFlickrListView;
     @InjectView(R.id.gv_flicker_photos)
@@ -54,7 +57,13 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        startService(new Intent(MainActivity.this, FlickrIntentService.class));
+        mFLickrPhotosAdapter = (FlickrPhotosAdapter) getLastCustomNonConfigurationInstance();
+        if (mFLickrPhotosAdapter == null ) {
+            startService(new Intent(MainActivity.this, FlickrIntentService.class));
+            Log.e(TAG, "Service Started");
+        } else {
+            setDataToView();
+        }
     }
 
 
@@ -94,6 +103,11 @@ public class MainActivity extends ActionBarActivity {
                 .considerExifParams(true)
                 .bitmapConfig(Bitmap.Config.RGB_565)
                 .build();
+    }
+
+    @Override
+    public Object onRetainCustomNonConfigurationInstance() {
+        return mFLickrPhotosAdapter;
     }
 
     private void setDataToView() {
